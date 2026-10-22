@@ -1,6 +1,6 @@
 Name: libserializer
 Version: 1.1.2
-Release: 18%{?dist}
+Release: 20%{?dist}
 Summary: JFreeReport General Serialization Framework
 License: LGPLv2+
 Group: System Environment/Libraries
@@ -9,10 +9,15 @@ Group: System Environment/Libraries
 #to simplify the licensing
 Source: libserializer-%{version}-jarsdeleted.zip
 URL: http://reporting.pentaho.org
-BuildRequires: ant, ant-contrib, java-devel, jpackage-utils, libbase >= 1.1.2
-Requires: java-headless, jpackage-utils, libbase >= 1.1.2
+BuildRequires: ant, ant-contrib, java-21-openjdk-devel, jpackage-utils, libbase >= 1.1.2
+Requires: java-21-openjdk-headless >= 1:21, jpackage-utils, libbase >= 1.1.2
 BuildArch: noarch
+
+%global java_home /usr/lib/jvm/java-21-openjdk
+
 Patch0: libserializer-1.1.2.build.patch
+Patch1: libserializer-1.1.2.java11.patch
+Patch2: libserializer-1.1.2-remove-commons-logging.patch
 
 %description
 Libserializer contains a general serialization framework that simplifies the
@@ -30,13 +35,16 @@ Javadoc for %{name}.
 %prep
 %setup -q -c
 %patch0 -p1 -b .build
+%patch1 -p1 -b .java11
+%patch2 -p1 -b .no_commons_logging
 find . -name "*.jar" -exec rm -f {} \;
 mkdir -p lib
-build-jar-repository -s -p lib libbase commons-logging-api
+build-jar-repository -s -p lib libbase
 cd lib
-ln -s %{_javadir}/ant ant-contrib
+ln -s /usr/share/java/ant ant-contrib
 
 %build
+export JAVA_HOME=%{java_home}
 ant jar javadoc
 
 %install
@@ -54,6 +62,15 @@ cp -rp bin/javadoc/docs/api $RPM_BUILD_ROOT%{_javadocdir}/%{name}
 %{_javadocdir}/%{name}
 
 %changelog
+* Mon Oct 19 2026 Tomas Popela <tpopela@redhat.com> - 1.1.2-20
+- Remove commons logging dependency
+- Related: RHEL-286491
+
+* Tue Oct 06 2026 Tomas Popela <tpopela@redhat.com> - 1.1.2-19
+- OpenJDK 8 won't be supported anymore on RHEL 8 starting from November 2026,
+  move to OpenJDK 21
+- Resolves: RHEL-275417
+
 * Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 1.1.2-18
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
